@@ -76,6 +76,7 @@ func main() {
 	v1 := r.Group("v1")
 	{
 		v1.GET("/boot/:macAddress", BootServers)
+		v1.GET("/", GETlocal)
 		//v1.GET("/install/:macAddress", InstallServer)
 		//v1.GET("/install/all", InstallAll)
 		//v1.GET("/reset/:macAddress", ResetServer)
@@ -91,6 +92,9 @@ func main() {
 /**
 	Les fonctions pour les routes 
 **/
+func GETlocal(c *gin.Context) {
+	c.JSON(200, "success")
+}
 func UpdateServer (){}
 func InstallServer(c *gin.Context) {}
 func InstallAll(c *gin.Context) {}
@@ -198,7 +202,7 @@ func pixicoreInit(ipAddress string,c *gin.Context){
 		I: []string{
 			"file:///home/cedille/coreos_production_pxe_image.cpio.gz",
 		},
-		CMD: cmd,
+		CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}",
 
 	}
 

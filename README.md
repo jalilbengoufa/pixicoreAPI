@@ -3,6 +3,8 @@
 
 ## How to run the API
 
+- install all the package dependencies `go get -d ./...`
+
 - `go build && ./pixicoreAPI`
 
 ## Using Docker
