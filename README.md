@@ -3,7 +3,7 @@
 
 ## How to run the API
 
-- `go buld && ./pixicoreAPI`
+- `go build && ./pixicoreAPI`
 
 ## Using Docker
 
