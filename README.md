@@ -1,6 +1,18 @@
 # pixicoreAPI
 
-### API Endpoints
+
+## How to run the API
+
+- `go buld && ./pixicoreAPI`
+
+## Using Docker
+
+- `docker build -t pixicoreapi . `
+
+- `docker run -d -p 3000:3000 pixicoreapi `
+
+
+## API Endpoints
 
 #### `GET v1/boot/:macAddress` 
 

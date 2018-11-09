@@ -76,9 +76,9 @@ func main() {
 	v1 := r.Group("v1")
 	{
 		v1.GET("/boot/:macAddress", BootServers)
-		v1.GET("/install/:macAddress", InstallServer)
-		v1.GET("/install/all", InstallAll)
-		v1.GET("/reset/:macAddress", ResetServer)
+		//v1.GET("/install/:macAddress", InstallServer)
+		//v1.GET("/install/all", InstallAll)
+		//v1.GET("/reset/:macAddress", ResetServer)
 		v1.GET("/reset/all", ResetAll)
 		v1.GET("/ips", GetIps)
 		v1.GET("/info", GetServers)
@@ -95,8 +95,6 @@ func UpdateServer (){}
 func InstallServer(c *gin.Context) {}
 func InstallAll(c *gin.Context) {}
 func ResetServer(c *gin.Context) {}
-
-func InstallServer(c *gin.Context) {}
 func ResetAll(c  *gin.Context) {
 	db := InitDb()
 	defer db.Close()
