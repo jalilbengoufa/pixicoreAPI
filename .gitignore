@@ -1,0 +1,5 @@
+# ignore the database file type
+.db
+
+# ignore this specific file
+pixicoreAPI
