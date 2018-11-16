@@ -64,27 +64,63 @@ func InstallAll(c *gin.Context)    {}
 func GetCollect(c *gin.Context) {
 
 	sshConfig := &ssh.ClientConfig{
-		User: "cedille",
+		User: "core",
 		Auth: []ssh.AuthMethod{
-			ssh.Password("Cedille123")},
+			PublicKeyFile("/home/django/src/ssh1"),
+		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	client := &SSHClient{
 		Config: sshConfig,
-		Host:   "192.168.0.102",
+		Host:   "192.168.0.105",
 		Port:   22,
 	}
 
 	cmd := &SSHCommand{
-		Path:   "ls /home/cedille/",
-		Env:    []string{"LC_DIR=/"},
+		Path:   "uname -r",
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
 
-	fmt.Printf("Running command: %s\n", cmd.Path)
+	cmd2 := &SSHCommand{
+		Path:   "grep -c ^processor /proc/cpuinfo",
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	cmd3 := &SSHCommand{
+		Path:   "cat /sys/class/net/enp4s0/address",
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	cmd4 := &SSHCommand{
+		Path:   "cat /sys/class/net/enp5s0/address",
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
 	if err := client.RunCommand(cmd); err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		os.Exit(1)
+	}
+	//var b bytes.Buffer
+	//cmd.Stdout = &b
+	//fmt.Println(string(b.Bytes()))
+
+	if err := client.RunCommand(cmd2); err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		os.Exit(1)
+	}
+
+	if err := client.RunCommand(cmd3); err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		os.Exit(1)
+	}
+
+	if err := client.RunCommand(cmd4); err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 		os.Exit(1)
 	}
@@ -186,7 +222,7 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 	return ssh.PublicKeys(key)
 }
 
-//called by pixicore client
+//called by pixicore client to register a new server
 func BootServers(c *gin.Context) {
 	if serverExist(c.Param("macAddress"), c) {
 		createServer(c.Param("macAddress"), c, ReadConfig())
