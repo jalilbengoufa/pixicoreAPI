@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,14 +18,6 @@ type Servers struct {
 	IPAddress  string `yaml:"ipAddress"`
 	Installed  bool   `yaml:"installed"`
 }
-type SSHCommand struct {
-	Path   string
-	Env    []string
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-}
-
 type SSHClient struct {
 	Config *ssh.ClientConfig
 	Host   string
@@ -76,112 +67,39 @@ func GetCollect(c *gin.Context) {
 		Port:   22,
 	}
 
-	cmd := &SSHCommand{
-		Path:   "uname -r",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	cmd2 := &SSHCommand{
-		Path:   "grep -c ^processor /proc/cpuinfo",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-	cmd3 := &SSHCommand{
-		Path:   "cat /sys/class/net/enp4s0/address",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-	cmd4 := &SSHCommand{
-		Path:   "cat /sys/class/net/enp5s0/address",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	if err := client.RunCommand(cmd); err != nil {
+	out, err := client.RunCommand("uname -r")
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 		os.Exit(1)
 	}
-	//var b bytes.Buffer
-	//cmd.Stdout = &b
-	//fmt.Println(string(b.Bytes()))
-
-	if err := client.RunCommand(cmd2); err != nil {
+	fmt.Print(string(out))
+	outSecond, err := client.RunCommand("cat /sys/class/net/enp4s0/address")
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 		os.Exit(1)
 	}
-
-	if err := client.RunCommand(cmd3); err != nil {
+	fmt.Print(string(outSecond))
+	outThird, err := client.RunCommand("cat /sys/class/net/enp5s0/address")
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 		os.Exit(1)
 	}
-
-	if err := client.RunCommand(cmd4); err != nil {
-		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
-		os.Exit(1)
-	}
+	fmt.Print(string(outThird))
 }
 
-func (client *SSHClient) RunCommand(cmd *SSHCommand) error {
+func (client *SSHClient) RunCommand(command string) (string, error) {
 	var (
 		session *ssh.Session
 		err     error
 	)
 
 	if session, err = client.newSession(); err != nil {
-		return err
+		return "", err
 	}
+
 	defer session.Close()
-
-	if err = client.prepareCommand(session, cmd); err != nil {
-		return err
-	}
-
-	err = session.Run(cmd.Path)
-	return err
-}
-
-func (client *SSHClient) prepareCommand(session *ssh.Session, cmd *SSHCommand) error {
-	for _, env := range cmd.Env {
-		variable := strings.Split(env, "=")
-		if len(variable) != 2 {
-			continue
-		}
-
-		if err := session.Setenv(variable[0], variable[1]); err != nil {
-			return err
-		}
-	}
-
-	if cmd.Stdin != nil {
-		stdin, err := session.StdinPipe()
-		if err != nil {
-			return fmt.Errorf("Unable to setup stdin for session: %v", err)
-		}
-		go io.Copy(stdin, cmd.Stdin)
-	}
-
-	if cmd.Stdout != nil {
-		stdout, err := session.StdoutPipe()
-		if err != nil {
-			return fmt.Errorf("Unable to setup stdout for session: %v", err)
-		}
-		go io.Copy(cmd.Stdout, stdout)
-	}
-
-	if cmd.Stderr != nil {
-		stderr, err := session.StderrPipe()
-		if err != nil {
-			return fmt.Errorf("Unable to setup stderr for session: %v", err)
-		}
-		go io.Copy(cmd.Stderr, stderr)
-	}
-
-	return nil
+	out, err := session.CombinedOutput(command)
+	return string(out), err
 }
 
 func (client *SSHClient) newSession() (*ssh.Session, error) {
