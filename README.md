@@ -2,8 +2,9 @@
 
 
 ## How to run the API
+- Install go
 
-- install all the package dependencies `go get -d ./...`
+- Install all the package dependencies with  `go get -d ./...` inside project directory
 
 - `go build && ./pixicoreAPI`
 
@@ -12,7 +13,6 @@
 - `docker build -t pixicoreapi . `
 
 - `docker run -d -p 3000:3000 pixicoreapi `
-
 
 ## API Endpoints
 
@@ -31,3 +31,9 @@
 #### `GEt v1/info`
 
 - show information about all the registred servers in DB.
+
+### TO DO
+
+- Unit tests
+    - https://semaphoreci.com/community/tutorials/test-driven-development-of-go-web-applications-with-gin
+    - https://medium.com/@craigchilds94/testing-gin-json-responses-1f258ce3b0b1

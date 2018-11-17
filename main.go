@@ -14,10 +14,14 @@ import (
 
 //Servers represent a config of a server
 type Servers struct {
-	MacAddress string `yaml:"macAddress"`
-	IPAddress  string `yaml:"ipAddress"`
-	Installed  bool   `yaml:"installed"`
+	MacAddress       string `yaml:"macAddress"`
+	IPAddress        string `yaml:"ipAddress"`
+	Installed        bool   `yaml:"installed"`
+	Kernel           string `yaml:"kernel"`
+	SecondMacAddress string `yaml:"secondmacAddress"`
 }
+
+//SSHClient used for ssh client
 type SSHClient struct {
 	Config *ssh.ClientConfig
 	Host   string
@@ -33,7 +37,7 @@ func main() {
 	{
 		v1.GET("/", Getlocal)
 		v1.GET("/boot/:macAddress", BootServers)
-		//v1.GET("/install/:macAddress", InstallServer)
+		v1.GET("/install/:macAddress", InstallServer)
 		//v1.GET("/install/all", InstallAll)
 		v1.GET("/servers", GetServers)
 		v1.GET("/collect", GetCollect)
@@ -43,16 +47,54 @@ func main() {
 	r.Run(":3000")
 }
 
-/**
-	Les fonctions pour les routes
-**/
+//// *************************** ROUTES ****************************
+
+//Getlocal pixicore demands
 func Getlocal(c *gin.Context) {
 	c.JSON(200, "success")
 }
-func UpdateServer()                {}
-func InstallServer(c *gin.Context) {}
-func InstallAll(c *gin.Context)    {}
+
+//BootServers called by pixicore client to register a new server
+func BootServers(c *gin.Context) {
+	if serverExist(c.Param("macAddress"), c) {
+		createServer(c.Param("macAddress"), c, ReadConfig())
+		pixicoreInit(c.Param("macAddress"), c)
+	} else {
+		c.JSON(400, gin.H{"success": "serveur exist deja"})
+	}
+}
+
+//InstallServer Install a single server
+func InstallServer(c *gin.Context) {
+
+	var servers map[string]Servers
+	servers = ReadConfig()
+	servers[c.Param("macAddress")] = CollectServerInfo(servers[c.Param("macAddress")])
+
+	s, err := yaml.Marshal(&servers)
+	f, err := os.Create("servers-config.yaml")
+	check(err)
+	f.Write(s)
+	f.Sync()
+	f.Close()
+
+}
+
+//InstallAll install all the servers available
+func InstallAll(c *gin.Context) {}
 func GetCollect(c *gin.Context) {
+
+	/*var (
+		session *ssh.Session
+		err     error
+		client  *SSHClient
+	)
+
+	if session, err = client.newSession(); err != nil {
+		fmt.Print("error while creating sesion")
+	}
+
+	defer session.Close()
 
 	sshConfig := &ssh.ClientConfig{
 		User: "core",
@@ -61,43 +103,82 @@ func GetCollect(c *gin.Context) {
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client := &SSHClient{
+	clientSSH := &SSHClient{
 		Config: sshConfig,
 		Host:   "192.168.0.105",
 		Port:   22,
 	}
 
-	out, err := client.RunCommand("uname -r")
+	kernel, err := clientSSH.RunCommand("uname -r", session)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
-		os.Exit(1)
 	}
-	fmt.Print(string(out))
-	outSecond, err := client.RunCommand("cat /sys/class/net/enp4s0/address")
+
+	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address", session)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
-		os.Exit(1)
 	}
-	fmt.Print(string(outSecond))
-	outThird, err := client.RunCommand("cat /sys/class/net/enp5s0/address")
+	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address", session)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
-		os.Exit(1)
-	}
-	fmt.Print(string(outThird))
+	}*/
 }
 
-func (client *SSHClient) RunCommand(command string) (string, error) {
+//CollectServerInfo collect information about a server with ssh
+func CollectServerInfo(server Servers) Servers {
+
 	var (
 		session *ssh.Session
 		err     error
+		client  *SSHClient
 	)
 
 	if session, err = client.newSession(); err != nil {
-		return "", err
+		fmt.Print("error while creating sesion")
 	}
 
 	defer session.Close()
+
+	sshConfig := &ssh.ClientConfig{
+		User: "core",
+		Auth: []ssh.AuthMethod{
+			PublicKeyFile("/home/django/src/ssh1"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	clientSSH := &SSHClient{
+		Config: sshConfig,
+		Host:   "192.168.0.105",
+		Port:   22,
+	}
+
+	kernel, err := clientSSH.RunCommand("uname -r", session)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+	}
+	server.Kernel = kernel
+
+	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address", session)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+	}
+
+	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address", session)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+	}
+	if server.MacAddress == macAddressFirst {
+		server.SecondMacAddress = macAddressSecond
+	} else {
+		server.SecondMacAddress = macAddressFirst
+	}
+
+	return server
+}
+
+//RunCommand run ssh command in the remote server and retrun output
+func (client *SSHClient) RunCommand(command string, session *ssh.Session) (string, error) {
+
 	out, err := session.CombinedOutput(command)
 	return string(out), err
 }
@@ -127,6 +208,7 @@ func (client *SSHClient) newSession() (*ssh.Session, error) {
 	return session, nil
 }
 
+//PublicKeyFile get public key with private key
 func PublicKeyFile(file string) ssh.AuthMethod {
 	buffer, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -140,68 +222,41 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 	return ssh.PublicKeys(key)
 }
 
-//called by pixicore client to register a new server
-func BootServers(c *gin.Context) {
-	if serverExist(c.Param("macAddress"), c) {
-		createServer(c.Param("macAddress"), c, ReadConfig())
-		pixicoreInit(c.Param("macAddress"), c)
-	} else {
-		c.JSON(400, gin.H{"success": "serveur exist deja"})
-	}
-}
+//GetServers return config of the all the servers
 func GetServers(c *gin.Context) {
-	filename, _ := filepath.Abs("servers-config.yaml")
-	yamlFile, err := ioutil.ReadFile(filename)
-
-	if err != nil {
-		panic(err)
-	}
-
-	servers := make(map[string]Servers)
-	err = yaml.Unmarshal(yamlFile, &servers)
-	if err != nil {
-		panic(err)
-	}
-	c.JSON(200, gin.H{"success": servers})
+	c.JSON(200, gin.H{"success": ReadConfig()})
 }
 
-/*
-Helper functions
-*/
+//// *************************** HELPER FUNCTIONS ****************************
+
 func serverExist(addr string, c *gin.Context) bool {
 	filename, _ := filepath.Abs("servers-config.yaml")
 	yamlFile, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 	servers := make(map[string]Servers)
 	err = yaml.Unmarshal(yamlFile, &servers)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 	if _, ok := servers[addr]; !ok {
 		return true
 	}
 	return false
 }
+
+//ReadConfig read the yaml config file
 func ReadConfig() map[string]Servers {
 
 	filename, _ := filepath.Abs("servers-config.yaml")
 	yamlFile, err := ioutil.ReadFile(filename)
+	check(err)
 
-	if err != nil {
-		panic(err)
-	}
 	server := make(map[string]Servers)
 	err = yaml.Unmarshal(yamlFile, &server)
-	if err != nil {
-		panic(err)
-	}
-	return server
+	check(err)
 
+	return server
 }
 func createServer(macAddress string, c *gin.Context, servers map[string]Servers) {
-	server := Servers{macAddress, "change me", false}
+	server := Servers{macAddress, "change me", false, "linux", "find me"}
 	servers[macAddress] = server
 
 	s, err := yaml.Marshal(&servers)
@@ -240,7 +295,7 @@ func check(e error) {
 	}
 }
 
-//create config if it does not exist
+//InitConfig create config if it does not exist
 func InitConfig() {
 	if _, err := os.Stat("servers-config.yaml"); os.IsNotExist(err) {
 		f, err := os.Create("servers-config.yaml")
@@ -248,6 +303,8 @@ func InitConfig() {
 		f.Close()
 	}
 }
+
+//Cors cors for the api
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Add("Access-Control-Allow-Origin", "*")
