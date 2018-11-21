@@ -8,11 +8,15 @@
 
 - `go build && ./pixicoreAPI`
 
-## Using Docker
+#### Using Docker
 
 - `docker build -t pixicoreapi . `
 
 - `docker run -d -p 3000:3000 pixicoreapi `
+
+## Usage
+
+- run `curl -i http://localhost:3000/v1/install/SERVER_MAC_ADDRESS`  this will collect info  and install coreOS for the server
 
 ## API Endpoints
 

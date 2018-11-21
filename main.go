@@ -47,7 +47,7 @@ func main() {
 	r.Run(":3000")
 }
 
-//// *************************** ROUTES ****************************
+//// *************************** Controllers ****************************
 
 //Getlocal pixicore demands
 func Getlocal(c *gin.Context) {
@@ -58,10 +58,8 @@ func Getlocal(c *gin.Context) {
 func BootServers(c *gin.Context) {
 	if serverExist(c.Param("macAddress"), c) {
 		createServer(c.Param("macAddress"), c, ReadConfig())
-		pixicoreInit(c.Param("macAddress"), c)
-	} else {
-		c.JSON(400, gin.H{"success": "serveur exist deja"})
 	}
+	pixicoreInit(c.Param("macAddress"), c)
 }
 
 //InstallServer Install a single server
@@ -142,13 +140,13 @@ func CollectServerInfo(server Servers) Servers {
 	sshConfig := &ssh.ClientConfig{
 		User: "core",
 		Auth: []ssh.AuthMethod{
-			PublicKeyFile("/home/django/src/ssh1"),
+			PublicKeyFile("/home/cedille/.ssh/id_rsa"),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	clientSSH := &SSHClient{
 		Config: sshConfig,
-		Host:   "192.168.0.105",
+		Host:   server.IPAddress,
 		Port:   22,
 	}
 
@@ -286,7 +284,7 @@ func pixicoreInit(ipAddress string, c *gin.Context) {
 		CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}",
 	}
 
-	c.JSON(200, gin.H{"success": resp})
+	c.JSON(200, resp)
 }
 
 func check(e error) {
