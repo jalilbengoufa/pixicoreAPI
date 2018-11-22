@@ -67,7 +67,7 @@ func InstallServer(c *gin.Context) {
 
 	var servers map[string]Servers
 	servers = ReadConfig()
-	servers[c.Param("macAddress")] = CollectServerInfo(servers[c.Param("macAddress")])
+	servers[c.Param("macAddress")] = CollectServerInfo(c, servers[c.Param("macAddress")])
 
 	s, err := yaml.Marshal(&servers)
 	f, err := os.Create("servers-config.yaml")
@@ -76,6 +76,7 @@ func InstallServer(c *gin.Context) {
 	f.Sync()
 	f.Close()
 
+	c.JSON(200, servers[c.Param("macAddress")])
 }
 
 //InstallAll install all the servers available
@@ -123,19 +124,7 @@ func GetCollect(c *gin.Context) {
 }
 
 //CollectServerInfo collect information about a server with ssh
-func CollectServerInfo(server Servers) Servers {
-
-	var (
-		session *ssh.Session
-		err     error
-		client  *SSHClient
-	)
-
-	if session, err = client.newSession(); err != nil {
-		fmt.Print("error while creating sesion")
-	}
-
-	defer session.Close()
+func CollectServerInfo(c *gin.Context, server Servers) Servers {
 
 	sshConfig := &ssh.ClientConfig{
 		User: "core",
@@ -150,32 +139,41 @@ func CollectServerInfo(server Servers) Servers {
 		Port:   22,
 	}
 
-	kernel, err := clientSSH.RunCommand("uname -r", session)
+	kernel, err := clientSSH.RunCommand("uname -r")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 	}
-	server.Kernel = kernel
+	server.Kernel = strings.TrimSuffix(kernel, "\r\n")
 
-	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address", session)
+	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 	}
 
-	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address", session)
+	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
 	}
-	if server.MacAddress == macAddressFirst {
-		server.SecondMacAddress = macAddressSecond
+	if server.MacAddress == strings.TrimSuffix(macAddressFirst, "\r\n") {
+		server.SecondMacAddress = strings.TrimSuffix(macAddressSecond, "\r\n")
 	} else {
-		server.SecondMacAddress = macAddressFirst
+		server.SecondMacAddress = strings.TrimSuffix(macAddressFirst, "\r\n")
 	}
 
 	return server
 }
 
 //RunCommand run ssh command in the remote server and retrun output
-func (client *SSHClient) RunCommand(command string, session *ssh.Session) (string, error) {
+func (client *SSHClient) RunCommand(command string) (string, error) {
+	var (
+		session *ssh.Session
+		err     error
+	)
+
+	if session, err = client.newSession(); err != nil {
+		return "", err
+	}
+	defer session.Close()
 
 	out, err := session.CombinedOutput(command)
 	return string(out), err
