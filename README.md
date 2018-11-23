@@ -16,7 +16,11 @@
 
 ## Usage
 
-- run `curl -i http://localhost:3000/v1/install/SERVER_MAC_ADDRESS`  this will collect info  and install coreOS for the server
+- Change the IP address for each server in the `servers-config.yaml` file
+
+- You can run `curl -i http://localhost:3000/v1/install/SERVER_MAC_ADDRESS`  this will collect info  and install coreOS for the server
+
+- You can run `curl -i http://localhost:3000/v1/all`  this will collect info  and install coreOS for each server
 
 ## API Endpoints
 
@@ -24,17 +28,17 @@
 
 - Used by pixicore to get PXE config and boot each server (each server have a IP address assigned).
 
-#### `GET v1/install/:macAddress` (NOT DONE) 
+#### `GET v1/install/:macAddress` 
 
 - get information (cores,ram,etc) from the server using her macAddress as ID and install coresOS. 
 
-#### `GEt v1/install/all` (NOT DONE) *to work you have to change the IP addr of the servers in config file
+#### `GEt v1/all` 
 
 - get information (cores,ram,etc) from each the server using her macAddress as ID and install coresOS for each one.
 
-#### `GEt v1/info`
+#### `GEt v1/servers`
 
-- show information about all the registred servers in DB.
+- show information about all the registred servers 
 
 ### TO DO
 
