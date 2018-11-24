@@ -100,9 +100,9 @@ func runCommandsInServers(c *gin.Context, server Servers) Servers {
 	}
 	server.Kernel = strings.TrimSuffix(kernel, "\r\n")
 
-	if _, err := clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable");{
-		server.Installed = true
-	}
+	installDistro, err := clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable")
+	_ = installDistro
+	server.Installed = true
 
 	return server
 }
