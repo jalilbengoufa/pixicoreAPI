@@ -31,7 +31,7 @@ func InstallServer(c *gin.Context) {
 
 	var servers map[string]Servers
 	servers = ReadConfig()
-	servers[c.Param("macAddress")] = CollectServerInfo(c, servers[c.Param("macAddress")])
+	servers[c.Param("macAddress")] = runCommandsInServers(c, servers[c.Param("macAddress")])
 
 	s, err := yaml.Marshal(&servers)
 	f, err := os.Create("servers-config.yaml")
@@ -49,7 +49,7 @@ func InstallAll(c *gin.Context) {
 	servers = ReadConfig()
 
 	for k := range servers {
-		servers[k] = CollectServerInfo(c, servers[k])
+		servers[k] = runCommandsInServers(c, servers[k])
 	}
 
 	s, err := yaml.Marshal(&servers)
@@ -63,7 +63,7 @@ func InstallAll(c *gin.Context) {
 }
 
 //CollectServerInfo collect information about a server with ssh
-func CollectServerInfo(c *gin.Context, server Servers) Servers {
+func runCommandsInServers(c *gin.Context, server Servers) Servers {
 
 	sshConfig := &ssh.ClientConfig{
 		User: "core",
@@ -78,6 +78,7 @@ func CollectServerInfo(c *gin.Context, server Servers) Servers {
 		Port:   22,
 	}
 
+	// run command with ssh
 	kernel, err := clientSSH.RunCommand("uname -r")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
@@ -98,6 +99,10 @@ func CollectServerInfo(c *gin.Context, server Servers) Servers {
 		server.SecondMacAddress = strings.TrimSuffix(macAddressFirst, "\r\n")
 	}
 	server.Kernel = strings.TrimSuffix(kernel, "\r\n")
+
+	if _, err := clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable");{
+		server.Installed = true
+	}
 
 	return server
 }

@@ -20,7 +20,7 @@
 
 - You can run `curl -i http://localhost:3000/v1/install/SERVER_MAC_ADDRESS`  this will collect info  and install coreOS for the server
 
-- You can run `curl -i http://localhost:3000/v1/all`  this will collect info  and install coreOS for each server
+- You can run `curl -i http://localhost:3000/v1/all/`  this will collect info  and install coreOS for each server
 
 ## API Endpoints
 
