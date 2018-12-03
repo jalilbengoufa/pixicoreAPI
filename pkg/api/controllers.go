@@ -1,69 +1,39 @@
-package main
+package api
 
 import (
 	"fmt"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
+
+	"github.com/jalilbengoufa/pixicoreAPI/pkg/server"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
-
-	"github.com/ghodss/yaml"
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/ssh"
 )
+
+type Controller struct {
+	currentConfig config.ConfigFile
+}
 
 //// *************************** Controllers ****************************
 
+func ControllerFactory(confFile config.ConfigFile) Controller {
+	ctrl := Controller{currentConfig: confFile}
+	return ctrl
+}
+
 //Getlocal pixicore demands
-func Getlocal(c *gin.Context) {
+func (ctrl Controller) Getlocal(c *gin.Context) {
 	c.JSON(200, "success")
-}
 
-//BootServers called by pixicore client to register a new server
-func BootServers(c *gin.Context) {
-	if serverExist(c.Param("macAddress"), c) {
-		createServer(c.Param("macAddress"), c, ReadConfig())
-	}
-	pixicoreInit(c.Param("macAddress"), c)
-}
-
-//InstallServer Install a single server
-func InstallServer(c *gin.Context) {
-
-	var servers map[string]Servers
-	servers = ReadConfig()
-	servers[c.Param("macAddress")] = runCommandsInServers(c, servers[c.Param("macAddress")])
-
-	s, err := yaml.Marshal(&servers)
-	f, err := os.Create("servers-config.yaml")
-	check(err)
-	f.Write(s)
-	f.Sync()
-	f.Close()
-
-	c.JSON(200, servers[c.Param("macAddress")])
-}
-
-//InstallAll install all the servers available
-func InstallAll(c *gin.Context) {
-	var servers map[string]Servers
-	servers = ReadConfig()
-
-	for k := range servers {
-		servers[k] = runCommandsInServers(c, servers[k])
-	}
-
-	s, err := yaml.Marshal(&servers)
-	f, err := os.Create("servers-config.yaml")
-	check(err)
-	f.Write(s)
-	f.Sync()
-	f.Close()
-
-	c.JSON(200, servers)
 }
 
 //CollectServerInfo collect information about a server with ssh
-func runCommandsInServers(c *gin.Context, server Servers) Servers {
+func RunCommandsInServers(c *gin.Context, server server.Server) server.Server {
 
 	sshConfig := &ssh.ClientConfig{
 		User: "core",
@@ -72,7 +42,7 @@ func runCommandsInServers(c *gin.Context, server Servers) Servers {
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	clientSSH := &SSHClient{
+	clientSSH := SSHClient{
 		Config: sshConfig,
 		Host:   server.IPAddress,
 		Port:   22,
@@ -81,16 +51,16 @@ func runCommandsInServers(c *gin.Context, server Servers) Servers {
 	// run command with ssh
 	kernel, err := clientSSH.RunCommand("uname -r")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		log.Errorln(os.Stderr, "command run error: %s", err)
 	}
 
 	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		log.Errorln(os.Stderr, "command run error: %s\n", err)
 	}
 	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "command run error: %s\n", err)
+		log.Errorln(os.Stderr, "command run error: %s\n", err)
 	}
 
 	if server.MacAddress == strings.TrimSuffix(macAddressFirst, "\r\n") {
@@ -100,11 +70,55 @@ func runCommandsInServers(c *gin.Context, server Servers) Servers {
 	}
 	server.Kernel = strings.TrimSuffix(kernel, "\r\n")
 
-	installDistro, err := clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable")
-	_ = installDistro
+	_, err = clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable")
+	if err != nil {
+		log.Errorln(os.Stderr, "command run error: %s\n", err)
+	}
+
 	server.Installed = true
 
 	return server
+}
+
+//BootServers called by pixicore client to register a new server
+func (ctrl Controller) BootServers(c *gin.Context) {
+	ctrl.currentConfig.Servers.Boot(c)
+}
+
+//InstallServer Install a single server
+func (ctrl Controller) InstallServer(c *gin.Context) {
+	macAddr := c.Param("macAddress")
+	if ctrl.currentConfig.Servers.IsExist(c) == false {
+
+		err := fmt.Sprint("This Requested server doesn't exist : ", macAddr)
+		c.JSON(http.StatusNotFound, gin.H{"status": err})
+	}
+
+	currentSvrMacAddr := ctrl.currentConfig.Servers[c.Param("macAddress")]
+	ctrl.currentConfig.Servers[c.Param("macAddress")] = RunCommandsInServers(c, currentSvrMacAddr)
+
+	ctrl.currentConfig.WriteYamlConfig()
+
+	c.JSON(200, ctrl.currentConfig.Servers[c.Param("macAddress")])
+}
+
+//InstallAll install all the servers available
+func (ctrl Controller) InstallAll(c *gin.Context) {
+	servers := ctrl.currentConfig.Servers
+	for k := range servers {
+		servers[k] = RunCommandsInServers(c, servers[k])
+	}
+
+	ctrl.currentConfig.WriteYamlConfig()
+
+	c.JSON(200, servers)
+}
+
+//SSHClient used for ssh client
+type SSHClient struct {
+	Config *ssh.ClientConfig
+	Host   string
+	Port   int
 }
 
 //RunCommand run ssh command in the remote server and retrun output
@@ -133,7 +147,6 @@ func (client *SSHClient) newSession() (*ssh.Session, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create session: %s", err)
 	}
-
 	modes := ssh.TerminalModes{
 		// ssh.ECHO:          0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
@@ -163,6 +176,6 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 }
 
 //GetServers return config of the all the servers
-func GetServers(c *gin.Context) {
-	c.JSON(200, gin.H{"success": ReadConfig()})
+func (ctrl Controller) GetServers(c *gin.Context) {
+	c.JSON(200, gin.H{"success": ctrl.currentConfig.Servers})
 }
