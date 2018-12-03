@@ -34,7 +34,7 @@ func ConfigFactory() ConfigFile {
 
 }
 
-//ReadConfig read the yaml config file
+//WriteConfig write the yaml config file
 func (configFile ConfigFile) WriteYamlConfig() {
 
 	if _, err := os.Stat(configFile.Path); os.IsNotExist(err) {
