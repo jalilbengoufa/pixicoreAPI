@@ -2,11 +2,11 @@
 
 
 ## How to run the API
-- Install go
+- Install go and [dep](https://github.com/golang/dep)
 
-- Install all the package dependencies with  `go get -d ./...` inside project directory
+- Install all the package dependencies with  `dep ensure` inside project directory
 
-- `go build && ./pixicoreAPI`
+- `go test ./... && go build ./cmd/pixicoreAPI && ./pixicoreAPI`
 
 #### Using Docker
 
