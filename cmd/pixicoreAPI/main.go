@@ -19,17 +19,17 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(helper.Cors())
-	myConfigFile := config.ConfigFactory()
-	controller := api.ControllerFactory(myConfigFile)
+	myConfigFile := config.InitConfig()
+	controller := api.InitController(myConfigFile)
 
-	v2Beta := r.Group("v2Beta")
+	v1 := r.Group("v2Beta")
 
 	{
-		v2Beta.GET("/", controller.Getlocal)
-		v2Beta.GET("/boot/:macAddress", controller.BootServers)
-		v2Beta.GET("/single/:macAddress", controller.InstallServer)
-		v2Beta.GET("/all/", controller.InstallAll)
-		v2Beta.GET("/servers", controller.GetServers)
+		v1.GET("/", controller.Getlocal)
+		v1.GET("/boot/:macAddress", controller.BootServers)
+		v1.GET("/single/:macAddress", controller.InstallServer)
+		v1.GET("/all/", controller.InstallAll)
+		v1.GET("/servers", controller.GetServers)
 	}
 
 	r.Run(":3000")
