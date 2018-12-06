@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/google/go-cmp/cmp"
-
 	"testing"
 )
 

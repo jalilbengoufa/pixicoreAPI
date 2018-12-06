@@ -2,16 +2,13 @@ package api
 
 import (
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
-
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/server"
+	"github.com/jalilbengoufa/pixicoreAPI/pkg/sshclient"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -21,7 +18,8 @@ type Controller struct {
 
 //// *************************** Controllers ****************************
 
-func ControllerFactory(confFile config.ConfigFile) Controller {
+// InitController Generate new controller for PXE boot
+func InitController(confFile config.ConfigFile) Controller {
 	ctrl := Controller{currentConfig: confFile}
 	return ctrl
 }
@@ -32,57 +30,11 @@ func (ctrl Controller) Getlocal(c *gin.Context) {
 
 }
 
-//CollectServerInfo collect information about a server with ssh
-func RunCommandsInServers(c *gin.Context, server server.Server) server.Server {
-
-	sshConfig := &ssh.ClientConfig{
-		User: "core",
-		Auth: []ssh.AuthMethod{
-			PublicKeyFile("/home/cedille/.ssh/id_rsa"),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-	clientSSH := SSHClient{
-		Config: sshConfig,
-		Host:   server.IPAddress,
-		Port:   22,
-	}
-
-	// run command with ssh
-	kernel, err := clientSSH.RunCommand("uname -r")
-	if err != nil {
-		log.Errorln(os.Stderr, "command run error: %s", err)
-	}
-
-	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address")
-	if err != nil {
-		log.Errorln(os.Stderr, "command run error: %s\n", err)
-	}
-	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address")
-	if err != nil {
-		log.Errorln(os.Stderr, "command run error: %s\n", err)
-	}
-
-	if server.MacAddress == strings.TrimSuffix(macAddressFirst, "\r\n") {
-		server.SecondMacAddress = strings.TrimSuffix(macAddressSecond, "\r\n")
-	} else {
-		server.SecondMacAddress = strings.TrimSuffix(macAddressFirst, "\r\n")
-	}
-	server.Kernel = strings.TrimSuffix(kernel, "\r\n")
-
-	_, err = clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable")
-	if err != nil {
-		log.Errorln(os.Stderr, "command run error: %s\n", err)
-	}
-
-	server.Installed = true
-
-	return server
-}
-
 //BootServers called by pixicore client to register a new server
-func (ctrl Controller) BootServers(c *gin.Context) {
-	ctrl.currentConfig.Servers.Boot(c)
+func (ctrl Controller) BootServer(c *gin.Context) {
+	servers := ctrl.currentConfig.Servers
+	server := servers.GetServer(c)
+	server.Boot(c)
 }
 
 //InstallServer Install a single server
@@ -94,8 +46,7 @@ func (ctrl Controller) InstallServer(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": err})
 	}
 
-	currentSvrMacAddr := ctrl.currentConfig.Servers[c.Param("macAddress")]
-	ctrl.currentConfig.Servers[c.Param("macAddress")] = RunCommandsInServers(c, currentSvrMacAddr)
+	ctrl.currentConfig.Servers[c.Param("macAddress")] = ctrl.CollectServerInfo(c)
 
 	ctrl.currentConfig.WriteYamlConfig()
 
@@ -105,8 +56,8 @@ func (ctrl Controller) InstallServer(c *gin.Context) {
 //InstallAll install all the servers available
 func (ctrl Controller) InstallAll(c *gin.Context) {
 	servers := ctrl.currentConfig.Servers
-	for k := range servers {
-		servers[k] = RunCommandsInServers(c, servers[k])
+	for svr := range servers {
+		servers[svr] = ctrl.CollectServerInfo(c)
 	}
 
 	ctrl.currentConfig.WriteYamlConfig()
@@ -114,65 +65,54 @@ func (ctrl Controller) InstallAll(c *gin.Context) {
 	c.JSON(200, servers)
 }
 
-//SSHClient used for ssh client
-type SSHClient struct {
-	Config *ssh.ClientConfig
-	Host   string
-	Port   int
-}
+//CollectServerInfo collect information about a server with ssh
+func (ctrl Controller) CollectServerInfo(c *gin.Context) server.Server {
 
-//RunCommand run ssh command in the remote server and retrun output
-func (client *SSHClient) RunCommand(command string) (string, error) {
-	var (
-		session *ssh.Session
-		err     error
-	)
-
-	if session, err = client.newSession(); err != nil {
-		return "", err
+	currentServer := ctrl.currentConfig.Servers[c.Param("macAddress")]
+	sshConfig := ssh.ClientConfig{
+		User: "core",
+		Auth: []ssh.AuthMethod{
+			sshclient.PublicKeyFile("/home/cedille/.ssh/id_rsa"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	defer session.Close()
+	clientSSH := sshclient.SSHClient{
+		Config: &sshConfig,
+		Host:   currentServer.IPAddress,
+		Port:   22,
+	}
 
-	out, err := session.CombinedOutput(command)
-	return string(out), err
-}
-
-func (client *SSHClient) newSession() (*ssh.Session, error) {
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Host, client.Port), client.Config)
+	// run command with ssh
+	kernel, err := clientSSH.RunCommand("uname -r")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to dial: %s", err)
+		log.Errorf("command run error: %s", err)
 	}
 
-	session, err := connection.NewSession()
+	macAddressFirst, err := clientSSH.RunCommand("cat /sys/class/net/enp4s0/address")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create session: %s", err)
+		log.Errorf("command run error: %s\n", err)
 	}
-	modes := ssh.TerminalModes{
-		// ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		session.Close()
-		return nil, fmt.Errorf("request for pseudo terminal failed: %s", err)
-	}
-
-	return session, nil
-}
-
-//PublicKeyFile get public key with private key
-func PublicKeyFile(file string) ssh.AuthMethod {
-	buffer, err := ioutil.ReadFile(file)
+	macAddressSecond, err := clientSSH.RunCommand("cat /sys/class/net/enp5s0/address")
 	if err != nil {
-		return nil
+		log.Errorf("command run error: %s\n", err)
 	}
 
-	key, err := ssh.ParsePrivateKey(buffer)
-	if err != nil {
-		return nil
+	if currentServer.MacAddress == strings.TrimSuffix(macAddressFirst, "\r\n") {
+		currentServer.SecondMacAddress = strings.TrimSuffix(macAddressSecond, "\r\n")
+	} else {
+		currentServer.SecondMacAddress = strings.TrimSuffix(macAddressFirst, "\r\n")
 	}
-	return ssh.PublicKeys(key)
+	currentServer.Kernel = strings.TrimSuffix(kernel, "\r\n")
+
+	_, err = clientSSH.RunCommand("sudo coreos-install -d /dev/sda -i /run/ignition.json -C stable")
+	if err != nil {
+		log.Errorf("command run error: %s\n", err)
+	}
+
+	currentServer.Installed = true
+
+	return currentServer
+
 }
 
 //GetServers return config of the all the servers

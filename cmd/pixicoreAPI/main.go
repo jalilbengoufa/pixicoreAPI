@@ -26,7 +26,7 @@ func main() {
 
 	{
 		v1.GET("/", controller.Getlocal)
-		v1.GET("/boot/:macAddress", controller.BootServers)
+		v1.GET("/boot/:macAddress", controller.BootServer)
 		v1.GET("/single/:macAddress", controller.InstallServer)
 		v1.GET("/all/", controller.InstallAll)
 		v1.GET("/servers", controller.GetServers)

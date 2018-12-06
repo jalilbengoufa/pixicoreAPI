@@ -17,12 +17,17 @@ type ConfigFile struct {
 }
 
 //InitConfig create config if it does not exist
-func ConfigFactory() ConfigFile {
+func InitConfig() ConfigFile {
 	filePath := "servers-config.yaml"
 	confFile := ConfigFile{Path: filePath, Servers: nil}
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Warn(err)
 		f, err := os.Create(filePath)
-		log.Fatalln(err)
+		if err != nil {
+			log.Errorln(err)
+
+		}
+
 		f.Close()
 		confFile := ConfigFile{Path: filePath, Servers: nil}
 		return confFile
