@@ -5,3 +5,6 @@
 ./pixicoreAPI
 ./cmd/pixicoreAPI/pixicoreAPI
 servers-config.yaml
+
+# ignore go vendor
+vendor
