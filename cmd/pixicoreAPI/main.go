@@ -22,7 +22,7 @@ func main() {
 	myConfigFile := config.InitConfig()
 	controller := api.InitController(myConfigFile)
 
-	v1 := r.Group("v2Beta")
+	v1 := r.Group("v1")
 
 	{
 		v1.GET("/", controller.Getlocal)
