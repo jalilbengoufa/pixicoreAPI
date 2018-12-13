@@ -29,7 +29,7 @@ func InitConfig() *ConfigFile {
 
 		}
 
-		f.Close()
+		defer f.Close()
 		servers := make(server.Servers)
 		confFile := ConfigFile{Path: filePath, Servers: &servers}
 		return &confFile
@@ -73,16 +73,12 @@ func (configFile *ConfigFile) ReadYamlConfig() {
 
 	} else {
 
-		err = yaml.Unmarshal(yamlFile, configFile.Servers)
+		err = yaml.Unmarshal(yamlFile, &configFile.Servers)
 		if err != nil {
 			log.Errorln(err)
 		}
 	}
 
-	if configFile.Servers == nil {
-		servers := make(server.Servers)
-		configFile.Servers = &servers
-	}
 }
 
 //GetServers return config of the all the servers
