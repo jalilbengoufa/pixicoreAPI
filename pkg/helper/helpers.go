@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"github.com/gin-gonic/gin"
 	"strings"
 )
 
@@ -28,12 +27,4 @@ func PixicoreInit(IPAddress string) PxeSpec {
 		CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}"}
 
 	return pxeSpec
-}
-
-//Cors cors for the api
-func Cors() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Add("Access-Control-Allow-Origin", "*")
-		c.Next()
-	}
 }

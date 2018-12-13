@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/api"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/helper"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,20 +16,9 @@ func init() {
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
-	r.Use(helper.Cors())
+
 	myConfigFile := config.InitConfig()
 	controller := api.InitController(myConfigFile)
-
-	v1 := r.Group("v1")
-
-	{
-		v1.GET("/", controller.Getlocal)
-		v1.GET("/boot/:macAddress", controller.BootServer)
-		v1.GET("/single/:macAddress", controller.InstallServer)
-		v1.GET("/all/", controller.InstallAll)
-		v1.GET("/servers", controller.GetServers)
-	}
-
+	r := api.GetRouter(controller)
 	r.Run(":3000")
 }

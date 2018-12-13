@@ -2,60 +2,115 @@ package server
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
+
+	"github.com/google/go-cmp/cmp"
+	// "github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/helper"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+	"net"
 )
 
 //Servers represent a list of Server type
-type Servers map[string]Server
+type Servers map[string]*Server
 
 //Server represent a config of a server
 type Server struct {
-	MacAddress       string `yaml:"macAddress"`
-	IPAddress        string `yaml:"ipAddress"`
-	Installed        bool   `yaml:"installed"`
-	Kernel           string `yaml:"kernel"`
-	SecondMacAddress string `yaml:"secondmacAddress"`
+	MacAddress       net.HardwareAddr `yaml:"macAddress"`
+	IPAddress        string           `yaml:"ipAddress"`
+	Installed        bool             `yaml:"installed"`
+	Kernel           string           `yaml:"kernel"`
+	SecondMacAddress string           `yaml:"secondmacAddress"`
 }
 
-func (servers Servers) addServer(macAddress string) {
-	server := Server{
-		MacAddress: macAddress, IPAddress: "change me", Installed: false, Kernel: "linux", SecondMacAddress: "find me"}
-	servers[macAddress] = server
-
+type EmptyServerListError struct {
 }
 
-//IsExist verify if server exist on list of server using gin context as input
-func (servers Servers) IsExist(c *gin.Context) bool {
-	macAddr := c.Param("macAddress")
-	if _, ok := servers[macAddr]; ok {
-		return true
+func (e *EmptyServerListError) Error() string {
+	return fmt.Sprintf("%v: server error", "Server list are empty")
+}
+
+type NilServerListError struct {
+}
+
+func (e *NilServerListError) Error() string {
+	return fmt.Sprintf("%v: server error", "Server list are nil")
+}
+
+type UnreconizeServerError struct {
+	serverList   *Servers
+	wantedServer string
+}
+
+func (e *UnreconizeServerError) Error() string {
+	return fmt.Sprintf("Server named %v+ is not found in this server list: %v+ ", e.wantedServer, e.serverList)
+}
+
+//AddServer Add server using mac Address.
+func (servers *Servers) AddServer(macAddressStr string) error {
+	var macAddress net.HardwareAddr
+	macAddress, err := net.ParseMAC(macAddressStr)
+	if err != nil {
+		return err
 	}
 
-	err := fmt.Sprint("This Requested server doesn't exist : ", macAddr)
-	log.Warningln(err)
+	_, err = servers.GetServer(macAddress.String())
+	server := Server{
+		MacAddress: macAddress, IPAddress: "change me", Installed: false, Kernel: "linux", SecondMacAddress: "find me"}
+	if err == nil {
+		log.Warnln("The server already exist in the list. Overwrite it.")
+	} else {
+		switch err.(type) {
+		case *EmptyServerListError:
+			log.Infoln(err)
+			break
+		case *UnreconizeServerError:
+			break
+		case *NilServerListError:
+			return err
+		default:
+			return err
+		}
+	}
 
-	return false
+	(*servers)[macAddress.String()] = &server
+
+	return nil
 }
 
 //GetServer Get server from a list of servers using context as input
-func (servers Servers) GetServer(c *gin.Context) Server {
-	macAddr := c.Param("macAddress")
-	if !servers.IsExist(c) {
-		c.JSON(http.StatusNotFound, gin.H{"status": "server don't exist"})
+func (servers *Servers) IsExist(macAddressStr string) bool {
+
+	server, _ := servers.GetServer(macAddressStr)
+
+	if server != nil {
+		return true
+	} else {
+		return false
 	}
 
-	server := servers[macAddr]
+}
 
-	return server
+//GetServer Get server from a list of servers using context as input
+func (servers *Servers) GetServer(macAddressStr string) (*Server, error) {
+
+	if servers == nil {
+		return nil, new(NilServerListError)
+	} else if cmp.Equal(*servers, make(Servers)) {
+		return nil, new(EmptyServerListError)
+
+	} else if server, ok := (*servers)[macAddressStr]; ok {
+		fmt.Print("MYSERVER", server)
+		return server, nil
+	} else {
+		err := UnreconizeServerError{serverList: servers, wantedServer: macAddressStr}
+		return nil, &err
+	}
+
 }
 
 //Boot Boot server specified in gin Context
-func (server Server) Boot(c *gin.Context) {
-	macAddr := c.Param("macAddress")
-	pxeSpec := helper.PixicoreInit(macAddr)
-	c.JSON(200, pxeSpec)
+func (server Server) Boot() (bootLog helper.PxeSpec) {
 
+	pxeSpec := helper.PixicoreInit(server.MacAddress.String())
+	return pxeSpec
 }

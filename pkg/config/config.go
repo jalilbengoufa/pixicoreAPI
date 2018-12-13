@@ -12,14 +12,15 @@ import (
 type configContent []byte
 
 type ConfigFile struct {
-	Servers server.Servers
+	Servers *server.Servers
 	Path    string
 }
 
 //InitConfig create config if it does not exist
-func InitConfig() ConfigFile {
+func InitConfig() *ConfigFile {
 	filePath := "servers-config.yaml"
 	confFile := ConfigFile{Path: filePath, Servers: nil}
+
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		log.Warn(err)
 		f, err := os.Create(filePath)
@@ -29,18 +30,19 @@ func InitConfig() ConfigFile {
 		}
 
 		f.Close()
-		confFile := ConfigFile{Path: filePath, Servers: nil}
-		return confFile
+		servers := make(server.Servers)
+		confFile := ConfigFile{Path: filePath, Servers: &servers}
+		return &confFile
 
 	} else {
 		confFile.ReadYamlConfig()
-		return confFile
+		return &confFile
 	}
 
 }
 
 //WriteConfig write the yaml config file
-func (configFile ConfigFile) WriteYamlConfig() {
+func (configFile *ConfigFile) WriteYamlConfig() {
 
 	if _, err := os.Stat(configFile.Path); os.IsNotExist(err) {
 		f, err := os.Create(configFile.Path)
@@ -59,16 +61,36 @@ func (configFile ConfigFile) WriteYamlConfig() {
 }
 
 //ReadConfig read the yaml config file
-func (configFile ConfigFile) ReadYamlConfig() {
+func (configFile *ConfigFile) ReadYamlConfig() {
 	filename, _ := filepath.Abs(configFile.Path)
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	err = yaml.Unmarshal(yamlFile, configFile.Servers)
-	if err != nil {
-		log.Errorln(err)
+	if len(yamlFile) == 0 {
+		log.Warningln("Configfile named ", filename, " are actually empty")
+
+	} else {
+
+		err = yaml.Unmarshal(yamlFile, configFile.Servers)
+		if err != nil {
+			log.Errorln(err)
+		}
 	}
 
+	if configFile.Servers == nil {
+		servers := make(server.Servers)
+		configFile.Servers = &servers
+	}
+}
+
+//GetServers return config of the all the servers
+func (configFile *ConfigFile) GetServers() (*server.Servers, error) {
+	log.Info(configFile)
+
+	if configFile.Servers == nil {
+		return configFile.Servers, new(server.NilServerListError)
+	}
+	return configFile.Servers, nil
 }
