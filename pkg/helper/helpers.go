@@ -1,6 +1,10 @@
 package helper
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net"
+	"os"
 	"strings"
 
 	"github.com/matishsiao/goInfo"
@@ -31,6 +35,36 @@ func PixicoreInit(IPAddress string) PxeSpec {
 
 	return pxeSpec
 }
+
+//CollectPhysicalsIfaces Used to collect physicals interfaces by excluding virtuals interfaces from all interfaces
+func CollectPhysicalsIfaces() ([]*net.Interface, error) {
+	// Use system path containing all interfaces
+	// Since everything is a file on *Nix systems we can only use /sys to discover nic.
+	basePath := "/sys/class/net"
+	var phyIfaceList []*net.Interface
+	files, err := ioutil.ReadDir(basePath)
+
+	if err != nil {
+		return phyIfaceList, err
+	}
+	for _, file := range files {
+		ifacePath, err := os.Readlink(fmt.Sprint(basePath, "/", file.Name()))
+		if err != nil {
+			log.Println(err)
+		}
+
+		// If the nic symlink doesn't contain "devices/virtual/net" then we got a physical device.
+		if !strings.Contains(ifacePath, "devices/virtual/net") {
+			phyIface, err := net.InterfaceByName(file.Name())
+			if err != nil {
+				log.Println(err)
+			}
+			phyIfaceList = append(phyIfaceList, phyIface)
+		}
+	}
+	return phyIfaceList, err
+}
+
 func GetServerInfo() *goInfo.GoInfoObject {
 
 	gi := goInfo.GetInfo()
