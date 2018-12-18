@@ -2,6 +2,9 @@ package helper
 
 import (
 	"strings"
+
+	"github.com/matishsiao/goInfo"
+	log "github.com/sirupsen/logrus"
 )
 
 type PxeSpec struct {
@@ -27,4 +30,11 @@ func PixicoreInit(IPAddress string) PxeSpec {
 		CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}"}
 
 	return pxeSpec
+}
+func GetServerInfo() *goInfo.GoInfoObject {
+
+	gi := goInfo.GetInfo()
+	log.Infoln(gi.String())
+
+	return gi
 }
