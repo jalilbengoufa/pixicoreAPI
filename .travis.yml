@@ -4,7 +4,7 @@ services:
 jobs:
   include:
   - stage: docker build including unit test tests
-    script: docker build .
+    script: docker build -t mikefaille/pixiecoreapi .
 
   - stage: release - prepare github release
     script:
