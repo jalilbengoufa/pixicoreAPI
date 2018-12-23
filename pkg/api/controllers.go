@@ -2,14 +2,15 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/server"
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/sshclient"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
-	"net/http"
-	"strings"
 )
 
 type Controller struct {
@@ -59,7 +60,7 @@ func (ctrl *Controller) InstallServer(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": err})
 	}
 
-	(*servers)[c.Param("macAddress")] = ctrl.CollectServerInfo(c)
+	ctrl.CollectServerInfo((*servers)[c.Param("macAddress")])
 
 	ctrl.currentConfig.WriteYamlConfig()
 
@@ -70,7 +71,7 @@ func (ctrl *Controller) InstallServer(c *gin.Context) {
 func (ctrl *Controller) InstallAll(c *gin.Context) {
 	servers := ctrl.currentConfig.Servers
 	for svr := range *servers {
-		(*servers)[svr] = ctrl.CollectServerInfo(c)
+		ctrl.InstallAServer((*servers)[svr], c)
 	}
 
 	ctrl.currentConfig.WriteYamlConfig()
@@ -78,10 +79,19 @@ func (ctrl *Controller) InstallAll(c *gin.Context) {
 	c.JSON(200, &servers)
 }
 
-// CollectServerInfo collect information about a server with ssh
-func (ctrl *Controller) CollectServerInfo(c *gin.Context) *server.Server {
+//InstallAServer Install a single server
+func (ctrl *Controller) InstallAServer(server *server.Server, c *gin.Context) {
 
-	currentServer := (*ctrl.currentConfig.Servers)[c.Param("macAddress")]
+	ctrl.CollectServerInfo(server)
+
+	ctrl.currentConfig.WriteYamlConfig()
+
+	c.JSON(200, server)
+}
+
+//CollectServerInfo collect information about a server with ssh
+func (ctrl *Controller) CollectServerInfo(currentServer *server.Server) {
+
 	sshConfig := ssh.ClientConfig{
 		User: "core",
 		Auth: []ssh.AuthMethod{
@@ -121,9 +131,7 @@ func (ctrl *Controller) CollectServerInfo(c *gin.Context) *server.Server {
 	if err != nil {
 		log.Errorf("command run error: %s\n", err)
 	}
-
 	currentServer.Installed = true
-	return currentServer
 
 }
 

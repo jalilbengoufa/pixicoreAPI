@@ -5,9 +5,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	// "github.com/google/go-cmp/cmp/cmpopts"
+	"net"
+
 	"github.com/jalilbengoufa/pixicoreAPI/pkg/helper"
 	log "github.com/sirupsen/logrus"
-	"net"
 )
 
 //Servers represent a list of Server type
@@ -112,7 +113,7 @@ func (servers *Servers) GetServer(macAddressStr string) (*Server, error) {
 }
 
 //Boot Boot server specified in gin Context
-func (server Server) Boot() (bootLog helper.PxeSpec) {
+func (server *Server) Boot() (bootLog helper.PxeSpec) {
 
 	pxeSpec := helper.PixicoreInit(server.MacAddress.String())
 	return pxeSpec
