@@ -6,34 +6,6 @@ jobs:
   - stage: docker build including unit test tests
     script: docker build .
 
-  - stage: release - generate release tag
-    script:
-    - git config --local user.name "bot@cedille.club"
-    - git config --local user.email "bot@cedille.club"
-    - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-    - git tag $TRAVIS_TAG
-    on:
-      repo: mikefaille/pixicoreAPI
-      tags: true
-
-  - stage: release - login on docker hub
-    script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-  - stage: release - create docker latest release
-    script:
-    - docker build -t mikefaille/pixiecoreapi:latest .
-    - docker push mikefaille/pixiecoreapi:latest
-    on:
-      repo: mikefaille/pixicoreAPI
-
-  - stage: release - create docker tagged release
-    script:
-    - docker tag mikefaille/pixiecoreapi:$TRAVIS_TAG  .
-    - docker push mikefaille/pixiecoreapi:$TRAVIS_TAG
-    on:
-      repo: mikefaille/pixicoreAPI
-      tags: true
-
   - stage: release - prepare github release
     script:
     - docker run mikefaille/pixiecoreapi cat pixicoreAPI > pixicoreAPI
