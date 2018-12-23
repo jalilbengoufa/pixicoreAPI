@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
 
 	"strings"
 	"testing"
