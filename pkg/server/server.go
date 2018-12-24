@@ -103,7 +103,6 @@ func (servers *Servers) GetServer(macAddressStr string) (*Server, error) {
 		return nil, new(EmptyServerListError)
 
 	} else if server, ok := (*servers)[macAddressStr]; ok {
-		fmt.Print("MYSERVER", server)
 		return server, nil
 	} else {
 		err := UnreconizeServerError{serverList: servers, wantedServer: macAddressStr}
