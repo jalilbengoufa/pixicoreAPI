@@ -17,14 +17,23 @@ type ConfigFile struct {
 }
 
 //InitConfig create config if it does not exist
-func InitConfig() *ConfigFile {
+func InitConfig() (*ConfigFile, error) {
 	filePath := "servers-config.yaml"
 
 	confFile := new(ConfigFile)
 	confFile.Path = filePath
-	confFile.ReadYamlConfig()
+	err := confFile.ReadYamlConfig()
+	switch err.(type) {
+	case nil:
+		break
+	case *os.PathError:
+		log.Warnln(err)
+		break
+	case error:
+		return nil, err
+	}
 
-	return confFile
+	return confFile, nil
 }
 
 //WriteConfig write the yaml config file
@@ -48,11 +57,12 @@ func (configFile *ConfigFile) WriteYamlConfig() {
 }
 
 //ReadConfig read the yaml config file
-func (configFile *ConfigFile) ReadYamlConfig() {
+func (configFile *ConfigFile) ReadYamlConfig() (error) {
 	filename, _ := filepath.Abs(configFile.Path)
+
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	// If the config file are empty, make a new servers list
@@ -67,7 +77,7 @@ func (configFile *ConfigFile) ReadYamlConfig() {
 		// Try to parse the config file as a server list
 		err = yaml.Unmarshal(yamlFile, &configFile.Servers)
 		if err != nil {
-			log.Errorln(err)
+			return err
 		}
 
 		// if the server list are nil in the config file, make a new list of servers
@@ -76,7 +86,7 @@ func (configFile *ConfigFile) ReadYamlConfig() {
 			configFile.Servers = &emptyServers
 		}
 	}
-
+	return nil
 }
 
 //GetServers return config of the all the servers
