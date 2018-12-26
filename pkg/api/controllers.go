@@ -27,7 +27,6 @@ func (ctrl *Controller) Getlocal(c *gin.Context) {
 func (ctrl *Controller) BootServer(c *gin.Context) {
 
 	servers, err := ctrl.currentConfig.GetServers()
-
 	if err != nil {
 		log.Warn(err)
 	}
@@ -136,7 +135,7 @@ func (ctrl *Controller) CollectServerInfo(currentServer *server.Server) {
 
 }
 
-//GetServers return config of the all the servers
+// GetServers return config of the all the servers
 func (ctrl *Controller) GetServers(c *gin.Context) {
 	servers, err := ctrl.currentConfig.GetServers()
 

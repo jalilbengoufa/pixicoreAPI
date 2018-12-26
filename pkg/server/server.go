@@ -34,7 +34,7 @@ type NilServerListError struct {
 }
 
 func (e *NilServerListError) Error() string {
-	return fmt.Sprintf("%v: server error", "Server list are nil")
+	return fmt.Sprintf("%v: server error", "Server list is nil and maps in Golang are useless when they are nil. Reference : https://blog.golang.org/go-maps-in-action")
 }
 
 type UnreconizeServerError struct {
@@ -67,7 +67,11 @@ func (servers *Servers) AddServer(macAddressStr string) error {
 		case *UnreconizeServerError:
 			break
 		case *NilServerListError:
+
+			// A map should not be nil
+			// Refence : https://blog.golang.org/go-maps-in-action
 			return err
+
 		default:
 			return err
 		}
@@ -100,7 +104,6 @@ func (servers *Servers) GetServer(macAddressStr string) (*Server, error) {
 		return nil, new(EmptyServerListError)
 
 	} else if server, ok := (*servers)[macAddressStr]; ok {
-		fmt.Print("MYSERVER", server)
 		return server, nil
 	} else {
 		err := UnreconizeServerError{serverList: servers, wantedServer: macAddressStr}

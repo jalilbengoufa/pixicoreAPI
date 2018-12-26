@@ -14,20 +14,23 @@ import (
 
 // Helper function to process a request and test its response
 func testHTTPResponse(t *testing.T, r *gin.Engine, req *http.Request, f func(w *httptest.ResponseRecorder) bool) {
-
 	// Create a response recorder
 	w := httptest.NewRecorder()
 
 	// Create the service and process the above request.
 	r.ServeHTTP(w, req)
-
 	if !f(w) {
 		t.Fail()
+
 	}
 }
 
 func TestGetServers(t *testing.T) {
-	myConfigFile := config.InitConfig()
+	myConfigFile, err := config.InitConfig()
+	if err != nil {
+		t.Errorf("An error from InitConfig usually comes from a broken configFile. TODO : Test env. must be sandboxed. Then config must be mocked.")
+	}
+
 	controller := InitController(myConfigFile)
 	r := GetRouter(controller)
 
@@ -42,5 +45,4 @@ func TestGetServers(t *testing.T) {
 
 		return statusOK && pageOK
 	})
-
 }
