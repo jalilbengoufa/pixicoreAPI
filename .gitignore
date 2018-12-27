@@ -1,6 +1,10 @@
 # ignore the database file type
 .db
 
-# ignore this specific file
-pixicoreAPI
+# ignore theses specifics files
+./pixicoreAPI
+./cmd/pixicoreAPI/pixicoreAPI
 servers-config.yaml
+
+# ignore go vendor
+vendor
