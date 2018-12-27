@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/ghodss/yaml"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/server"
+	"github.com/ClubCedille/pixicoreAPI/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"

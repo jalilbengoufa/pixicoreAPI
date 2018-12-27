@@ -2,13 +2,11 @@ package server
 
 import (
 	"fmt"
-
 	"github.com/google/go-cmp/cmp"
 	// "github.com/google/go-cmp/cmp/cmpopts"
-	"net"
-
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/helper"
+	"github.com/ClubCedille/pixicoreAPI/pkg/helper"
 	log "github.com/sirupsen/logrus"
+	"net"
 )
 
 //Servers represent a list of Server type

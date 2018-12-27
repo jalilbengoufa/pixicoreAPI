@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/api"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
+	"github.com/ClubCedille/pixicoreAPI/pkg/api"
+	"github.com/ClubCedille/pixicoreAPI/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"

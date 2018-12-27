@@ -11,7 +11,7 @@ jobs:
     - docker build -t mikefaille/pixiecoreapi .
     - docker run mikefaille/pixiecoreapi cat pixicoreAPI > pixicoreAPI
     on:
-      repo: mikefaille/pixicoreAPI
+      repo: ClubCedille/pixicoreAPI
       tags: true
 
 deploy:
@@ -20,5 +20,5 @@ deploy:
     secure: uGy363QwqFNn8Z5YDCnkoEr6Nzomk4B4YfTnzsancTOri8qxXjdtOnuComTRzLhfUXyGJ/DPuWqUoKLMJLL217W9ycd1EFZx7My0ihoKfWL1TL2nIZxD1GWp7DKrBCkhC7flg/qA1jVsugiefeCizXi7yn6KW4ReNdV2WBQybjevMy7tjsqPgGxgryg65njIxP6LctP1Ar/Tr13i15umMxs8ncEQOJSNIvob1TgU7P84+RobF+Z6kkCb+wlHCNF2sAJUmxgV9CTDAdEAnRoWXxQB6f0sOyCElX8hRsofBFfm7IACpYYeluQpUdJDVK+qWzNpfezni5AJI3GtLl+7dISg1TvDO15B//bQqj67K/XjVifJaqopC4hkqHqqPZF5a0UWE61sLRPh5CjH2aa9TlgnB4+OO9LaGXysT6yGImAaITrDKRYbDVgEiHa81lH/6RHZUSqDv26KbhsL9q37NMfGYPWFq9Bf49jJO7g8wpziuhRCilInaJncgr29+LU3ceflVlEIECw4aCpRYKotcK6vIwNsEytRviSkbLgbhla3cxoral2X3LRzsRGVRfnlCCERamFY2SMFIIWSLDRkwW++ft1LHtkFtqzrPD4iV7Id0+ajnot+/P5eJ3PkngYUmxq0SpXIMFCuFmhOYP0QPaY056V3ESu7a1T0lwf3T0w=
   file: pixicoreAPI
   on:
-    repo: mikefaille/pixicoreAPI
+    repo: ClubCedille/pixicoreAPI
     tags: true

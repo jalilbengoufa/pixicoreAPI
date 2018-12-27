@@ -4,7 +4,7 @@
 
 - Install [Go](https://nats.io/documentation/tutorials/go-install/).
 
-- Git clone the repo into `$GOPATH/src/github.com/jalilbengoufa/`.
+- Git clone the repo into `$GOPATH/src/github.com/ClubCedille/`.
 
 - Enter the `pixicoreAPI` directory.
 
@@ -32,11 +32,11 @@
 
 ## API Endpoints
 
-#### `GET v1/boot/:macAddress` 
+#### `GET v1/boot/:macAddress`
 
 - Used by pixicore to get PXE config and boot each server (each server have a IP address assigned).
 
-#### `GET v1/install/:macAddress` 
+#### `GET v1/install/:macAddress`
 
 - Gets information (cores, RAM, etc) from the server using its macAddress as ID and install coresOS.
 
