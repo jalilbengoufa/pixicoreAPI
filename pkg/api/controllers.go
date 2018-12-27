@@ -71,22 +71,12 @@ func (ctrl *Controller) InstallServer(c *gin.Context) {
 func (ctrl *Controller) InstallAll(c *gin.Context) {
 	servers := ctrl.currentConfig.Servers
 	for svr := range *servers {
-		ctrl.InstallAServer((*servers)[svr], c)
+		ctrl.CollectServerInfo((*servers)[svr])
 	}
 
 	ctrl.currentConfig.WriteYamlConfig()
 
 	c.JSON(200, &servers)
-}
-
-//InstallAServer Install a single server
-func (ctrl *Controller) InstallAServer(server *server.Server, c *gin.Context) {
-
-	ctrl.CollectServerInfo(server)
-
-	ctrl.currentConfig.WriteYamlConfig()
-
-	c.JSON(200, server)
 }
 
 //CollectServerInfo collect information about a server with ssh
