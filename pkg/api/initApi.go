@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
+	"github.com/ClubCedille/pixicoreAPI/pkg/config"
 )
 
 //// *************************** Controllers ****************************

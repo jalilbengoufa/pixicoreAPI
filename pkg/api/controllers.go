@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/config"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/server"
-	"github.com/jalilbengoufa/pixicoreAPI/pkg/sshclient"
+	"github.com/ClubCedille/pixicoreAPI/pkg/config"
+	"github.com/ClubCedille/pixicoreAPI/pkg/server"
+	"github.com/ClubCedille/pixicoreAPI/pkg/sshclient"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
