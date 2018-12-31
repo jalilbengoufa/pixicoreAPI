@@ -7,40 +7,45 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 #apt-get upgrade -y
 
-
 # install vim.
 
 apt-get install -y --no-install-recommends vim
-cat >/etc/vim/vimrc.local <<'EOF'
-syntax on
-set background=dark
-set esckeys
-set ruler
-set laststatus=2
-set nobackup
-EOF
+
+# install git and curl
+
+sudo apt install -y  git curl
+
+# install docker whth this script  from https://github.com/docker/docker-install
+
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 
 # install golang 
 
-wget https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz
+wget -nv https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz
 tar -xvf go1.10.3.linux-amd64.tar.gz
-sudo mv go /usr/local
-export PATH=$PATH:/usr/local/go/bin
+rm go1.10.3.linux-amd64.tar.gz
+sudo chown -R root:root ./go
+sudo mv go /usr/local 
+touch /home/vagrant/.bash_profile
+echo "export PATH=$PATH:/usr/local/go/bin" >> /home/vagrant/.bash_profile
+source /home/vagrant/.bash_profile
 
-# install git
 
-sudo apt install git -y
+# install and run pixiecore client 
 
-# install pixiecore
-go get -v go.universe.tf/netboot/cmd/pixiecore
+#go get -v go.universe.tf/netboot/cmd/pixiecore && sudo ~/go/bin/pixiecore api http://localhost:3000 --dhcp-no-bind 
 
-# run pixiecore client 
 
-#sudo ~/go/bin/pixiecore api http://localhost:3000 --dhcp-no-bind
+#run pixiecore api
 
-# run pixiecore api
-
-cp /vagrant/pixicoreAPI ~/
+#sudo docker build -t pixicoreapi /vagrant/
+#sudo docker run -d -p 3000:3000 pixicoreapi
+mkdir /home/cedille/
+mv /vagrant/pixicoreAPI /home/cedille
+mv /vagrant/pxe-config.ign /home/cedille/
+mv /vagrant/coreos_production_pxe_image.cpio.gz /home/cedille/coreos_production_pxe_image.cpio.gz
+mv /vagrant/coreos_production_pxe.vmlinuz /home/cedille/coreos_production_pxe.vmlinuz
 
 # provision the DHCP server.
 # see http://www.syslinux.org/wiki/index.php?title=PXELINUX

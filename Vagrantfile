@@ -27,8 +27,17 @@ Vagrant.configure("2") do |config|
     config.vm.provision "shell", inline: "sudo ip link set dev eth1 up && sudo dhclient eth1"
     config.vm.provider :virtualbox do |vb, config|
       vb.memory = 2048
+      vb.check_guest_additions = false
+      vb.functional_vboxsf = false
+      config.vm.synced_folder '.', '/vagrant', disabled: true
+
       vb.customize ['modifyvm', :id, '--macaddress1', '080027000022']
-	    vb.customize ['modifyvm', :id, '--natnet1', '10.0.2.0/24']
+      vb.customize ['modifyvm', :id, '--natnet1', '10.0.2.0/24']
+      vb.customize ['modifyvm', :id, '--intnet1', 'pxe_network']
+      vb.customize ['modifyvm', :id, '--boot1', 'net']
+      vb.customize ['modifyvm', :id, '--biospxedebug', 'on']
+      vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
+      vb.customize ['modifyvm', :id, '--nicbootprio2', '1']
     end
   end
 
