@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/ClubCedille/pixicoreAPI/pkg/config"
 	"github.com/ClubCedille/pixicoreAPI/pkg/server"
 	"github.com/ClubCedille/pixicoreAPI/pkg/sshclient"
+	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -45,7 +45,7 @@ func (ctrl *Controller) BootServer(c *gin.Context) {
 	} else {
 
 		pxeSpec := server.Boot()
-		c.JSON(200, fmt.Sprint(pxeSpec))
+		c.JSON(200, pxeSpec)
 	}
 
 }

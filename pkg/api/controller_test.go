@@ -1,13 +1,16 @@
 package api
 
 import (
-	"github.com/ClubCedille/pixicoreAPI/pkg/config"
-	"github.com/gin-gonic/gin"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"reflect"
 	"testing"
+
+	"github.com/ClubCedille/pixicoreAPI/pkg/config"
+	"github.com/ClubCedille/pixicoreAPI/pkg/helper"
+	"github.com/gin-gonic/gin"
 )
 
 // Helper function to process a request and test its response
@@ -38,8 +41,19 @@ func TestGetServers(t *testing.T) {
 		statusOK := w.Code == http.StatusOK
 
 		p, err := ioutil.ReadAll(w.Body)
+		MockpxeSpec := helper.PxeSpec{
 
-		pageOK := err == nil && strings.Index(string(p), `{file:///home/cedille/coreos_production_pxe.vmlinuz [file:///home/cedille/coreos_production_pxe_image.cpio.gz] coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}}"`) > 0
+			K: "file:///home/cedille/coreos_production_pxe.vmlinuz",
+			I: []string{
+				"file:///home/cedille/coreos_production_pxe_image.cpio.gz",
+			},
+			CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}"}
+
+		response := helper.PxeSpec{}
+
+		json.Unmarshal([]byte(p), &response)
+
+		pageOK := err == nil && reflect.DeepEqual(MockpxeSpec, response)
 
 		return statusOK && pageOK
 	})
