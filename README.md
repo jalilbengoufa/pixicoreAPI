@@ -16,6 +16,18 @@
 
 - `go test ./... && go build ./cmd/pixicoreAPI && ./pixicoreAPI` will run the tests, build the program and run it.
 
+## Run with vagrant
+
+- Install Vagrant and VirtualBox
+
+- Create a hostonly adapter with VBoxManage with `VBoxManage hostonlyif create`
+
+- Copy the returned name and replaced in the Vagrantfile where `vboxnet0` is used;
+
+- Run `vagrant up` or separately with (`vagrant up master`), (`vagrant up vboxNode1`), (`vagrant up vboxNode2`).
+
+- ssh into the master with `vagrant ssh master`
+
 #### Using Docker
 
 - `docker build -t pixicoreapi .`
@@ -32,24 +44,18 @@
 
 ## API Endpoints
 
-#### `GET v1/boot/:macAddress`
+### `GET v1/boot/:macAddress`
 
 - Used by pixicore to get PXE config and boot each server (each server have a IP address assigned).
 
-#### `GET v1/install/:macAddress`
+### `GET v1/install/:macAddress`
 
 - Gets information (cores, RAM, etc) from the server using its macAddress as ID and install coresOS.
 
-#### `GET v1/all`
+### `GET v1/all`
 
 - Gets information (cores, RAM, etc) from each the server using its macAddress as ID and install coresOS for each one.
 
-#### `GET v1/servers`
+### `GET v1/servers`
 
 - Show information about all the registered servers.
-
-### TODO
-
-- Unit tests
-    - https://semaphoreci.com/community/tutorials/test-driven-development-of-go-web-applications-with-gin
-    - https://medium.com/@craigchilds94/testing-gin-json-responses-1f258ce3b0b1
