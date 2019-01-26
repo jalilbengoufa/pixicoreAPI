@@ -43,11 +43,11 @@ func TestGetServers(t *testing.T) {
 		p, err := ioutil.ReadAll(w.Body)
 		MockpxeSpec := helper.PxeSpec{
 
-			K: "file:///home/cedille/coreos_production_pxe.vmlinuz",
+			K: "file:///app/coreosPxeConfig/coreos_production_pxe.vmlinuz",
 			I: []string{
-				"file:///home/cedille/coreos_production_pxe_image.cpio.gz",
+				"file:///app/coreosPxeConfig/coreos_production_pxe_image.cpio.gz",
 			},
-			CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///home/cedille/pxe-config.ign\" }}"}
+			CMD: "coreos.autologin coreos.first_boot=1 coreos.config.url={{ URL \"file:///app/coreosPxeConfig/pxe-config.ign\" }}"}
 
 		response := helper.PxeSpec{}
 
